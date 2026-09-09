@@ -1,0 +1,658 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#2563eb">
+<title>Gastos de Mercado</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header>
+  <h1>🛒 Gastos de Mercado</h1>
+  <p>Controle suas compras e despesas</p>
+
+  <button
+    type="button"
+    class="botao-configuracoes"
+    data-tela="configuracoes"
+    aria-label="Abrir configurações"
+    title="Configurações"
+  >
+    ⚙️
+  </button>
+</header>
+
+<nav class="menu" aria-label="Navegação principal">
+  <button type="button" data-tela="inicio">🏠 Início</button>
+  <button type="button" data-tela="produtos">📦 Produtos</button>
+  <button type="button" data-tela="estabelecimentos">🏪 Estabelecimentos</button>
+  <button type="button" data-tela="compras">🛍️ Compras</button>
+  <button type="button" data-tela="listaCompras">📝 Lista de compras</button>
+  <button type="button" data-tela="precos">💰 Preços</button>
+</nav>
+
+<main>
+<section id="inicio" class="tela">
+  <h2>Resumo</h2>
+  <div class="cards">
+    <div class="card"><span>Total gasto</span><strong id="totalGasto">R$ 0,00</strong></div>
+    <div class="card"><span>Compras</span><strong id="totalCompras">0</strong></div>
+    <div class="card"><span>Produtos</span><strong id="totalProdutos">0</strong></div>
+    <div class="card"><span>Estabelecimentos</span><strong id="totalEstabelecimentos">0</strong></div>
+  </div>
+</section>
+
+<section id="produtos" class="tela">
+  <div class="titulo">
+    <h2>Produtos</h2>
+    <button
+      type="button"
+      id="btnNovoProduto"
+      class="botao-novo-produto"
+    >
+      + Produto
+    </button>
+  </div>
+
+  <div class="filtros-produtos">
+
+    <label for="pesquisaProdutos">Pesquisar produto</label>
+
+    <input
+      id="pesquisaProdutos"
+      class="campo"
+      type="search"
+      placeholder="Digite o nome ou EAN..."
+      autocomplete="off"
+    >
+
+    <label for="filtroCategoriaProdutos">Categoria</label>
+
+    <select id="filtroCategoriaProdutos" class="campo">
+      <option value="">Todas as categorias</option>
+    </select>
+
+    <div class="separador-pesquisa-produtos">
+      <button
+        type="button"
+        id="btnPesquisarProdutos"
+      >
+        🔎 Pesquisar
+      </button>
+    </div>
+
+  </div>
+
+  <div id="resumoProdutos"></div>
+
+  <div id="listaProdutos"></div>
+
+  <div id="carregarMaisProdutosContainer"></div>
+
+</section>
+
+<section id="estabelecimentos" class="tela">
+  <div class="titulo">
+    <h2>Estabelecimentos</h2>
+    <button
+      type="button"
+      id="btnNovoEstabelecimento"
+      class="botao-novo-estabelecimento"
+    >
+      + Estabelecimento
+    </button>
+  </div>
+  <div id="listaEstabelecimentos"></div>
+</section>
+
+<section id="compras" class="tela">
+  <div class="titulo">
+    <h2>Compras</h2>
+    <button
+      type="button"
+      id="btnNovaCompra"
+      class="botao-nova-compra"
+    >
+      + Compra
+    </button>
+  </div>
+  <div id="listaComprasCadastradas"></div>
+</section>
+
+<section id="detalhesCompra" class="tela">
+  <div id="conteudoDetalhesCompra"></div>
+</section>
+
+<section id="listaCompras" class="tela">
+
+  <div class="titulo">
+    <h2>Lista de compras</h2>
+
+    <div class="acoes">
+      <button
+        type="button"
+        id="btnNovoItemLista"
+        class="botao-barra-lista adicionar"
+        data-acao="novo-item-lista"
+      >
+        + Produto
+      </button>
+
+      <button
+        type="button"
+        id="btnLimparListaCompras"
+        class="botao-barra-lista botao-limpar"
+        data-acao="limpar-lista-compras"
+      >
+        🗑️ Limpar lista
+      </button>
+    </div>
+  </div>
+
+  <div id="itensListaCompras"></div>
+
+</section>
+
+<section id="historicoComprasLista" class="tela">
+
+  <div class="titulo">
+    <h2>Últimas compras</h2>
+  </div>
+
+  <div id="cabecalhoHistoricoComprasLista" class="card-cabecalho-historico">
+
+    <button
+      type="button"
+      class="botao-voltar"
+      data-acao="voltar-lista-compras"
+    >
+      ← Voltar para lista de compras
+    </button>
+
+    <h3 id="produtoBaseHistoricoComprasNome">
+      Produto
+    </h3>
+
+  </div>
+
+  <div id="conteudoHistoricoComprasLista"></div>
+
+  <div id="carregarMaisHistoricoComprasContainer"></div>
+
+</section>
+
+<section id="precos" class="tela">
+  <div class="titulo">
+    <h2>Pesquisa de preços</h2>
+  </div>
+
+  <div id="containerPesquisaPrecos" class="filtros-precos">
+
+    <label for="filtroProdutoPreco">
+      Produto
+    </label>
+
+    <select id="filtroProdutoPreco" class="campo">
+      <option value="">Todos</option>
+    </select>
+
+    <label for="pesquisaProduto">
+      Pesquisa
+    </label>
+
+    <input
+      id="pesquisaProduto"
+      class="campo"
+      type="search"
+      placeholder="Nome, marca, complemento ou EAN"
+      autocomplete="off"
+    >
+
+    <div class="separador-pesquisa">
+      <button type="button" id="btnPesquisarPrecos">
+        🔎 Pesquisar
+      </button>
+    </div>
+
+  </div>
+
+  <div id="listaProdutosPrecos"></div>
+
+  <div id="historicoPrecos"></div>
+</section>
+
+<section id="configuracoes" class="tela">
+
+  <div class="titulo">
+    <h2>Configurações</h2>
+  </div>
+
+  <div class="grupo-configuracoes">
+
+    <h3>Dados</h3>
+
+    <div class="lista-configuracoes">
+
+      <button type="button" class="item-configuracao" data-acao="exportar-dados">
+        <span class="icone-configuracao" aria-hidden="true">📤</span>
+
+        <span class="texto-configuracao">
+          <strong>Exportar dados</strong>
+          <small>Fazer backup dos dados da aplicação</small>
+        </span>
+
+        <span class="chevron-configuracao" aria-hidden="true">›</span>
+      </button>
+
+      <button type="button" class="item-configuracao" data-acao="importar-dados">
+        <span class="icone-configuracao" aria-hidden="true">📥</span>
+
+        <span class="texto-configuracao">
+          <strong>Importar dados</strong>
+          <small>Restaurar dados de um arquivo</small>
+        </span>
+
+        <span class="chevron-configuracao" aria-hidden="true">›</span>
+      </button>
+
+      <input
+        type="file"
+        id="inputImportarDados"
+        accept=".json,application/json"
+        hidden
+      >
+    </div>
+
+  </div>
+
+  <div class="grupo-configuracoes">
+
+    <h3>Produtos</h3>
+
+    <div class="lista-configuracoes">
+
+      <button type="button" class="item-configuracao" data-tela="produtosBase">
+        <span class="icone-configuracao" aria-hidden="true">📝</span>
+
+        <span class="texto-configuracao">
+          <strong>Editar produtos base</strong>
+          <small>Gerenciar o catálogo de produtos</small>
+        </span>
+
+        <span class="chevron-configuracao" aria-hidden="true">›</span>
+      </button>
+
+    </div>
+
+  </div>
+
+  <div class="grupo-configuracoes">
+
+    <h3>Dados da aplicação</h3>
+
+    <div class="lista-configuracoes">
+
+        <button
+          type="button"
+          class="item-configuracao item-configuracao-perigoso"
+          data-acao="limpar-dados"
+        >
+        <span class="icone-configuracao" aria-hidden="true">🗑️</span>
+
+        <span class="texto-configuracao">
+          <strong>Limpar dados</strong>
+          <small>Remover os dados cadastrados na aplicação</small>
+        </span>
+
+        <span class="chevron-configuracao" aria-hidden="true">›</span>
+      </button>
+
+    </div>
+
+  </div>
+
+</section>
+
+<section id="produtosBase" class="tela">
+
+  <div class="titulo">
+    <h2>Produtos base</h2>
+
+    <button
+      type="button"
+      id="btnNovoProdutoBaseTela"
+      class="botao-novo-produto-base"
+    >
+      + Produto base
+    </button>
+  </div>
+
+  <div class="filtros-produtos">
+
+    <label for="pesquisaProdutosBase">Pesquisar produto</label>
+
+    <input
+      id="pesquisaProdutosBase"
+      class="campo"
+      type="search"
+      placeholder="Digite o nome do produto..."
+      autocomplete="off"
+    >
+
+    <label for="filtroCategoriaProdutosBase">Categoria</label>
+
+    <select
+      id="filtroCategoriaProdutosBase"
+      class="campo"
+    >
+      <option value="">Todas as categorias</option>
+    </select>
+
+    <div class="separador-pesquisa-produtos">
+      <button
+        type="button"
+        id="btnPesquisarProdutosBase"
+        data-acao="pesquisar-produtos-base"
+      >
+        🔎 Pesquisar
+      </button>
+    </div>
+
+  </div>
+
+  <div id="listaProdutosBase"></div>
+
+</section>
+
+
+</main>
+
+<div id="modalProduto" class="modal">
+  <div class="modal-content">
+
+    <button type="button" class="fechar" data-fechar aria-label="Fechar">×</button>
+
+    <h2 id="tituloModalProduto">Cadastrar produto</h2>
+    
+    <form id="formProduto">
+
+      <label for="produtoBase">Produto</label>
+
+      <div class="selecao-produto">
+        <select id="produtoBase" required>
+          <option value="">Selecione um produto</option>
+        </select>
+
+        <button
+          type="button"
+          id="btnNovoProdutoBase"
+          class="botao-secundario"
+        >
+          + Novo produto
+        </button>
+      </div>
+
+      <label for="produtoMarca">Marca</label>
+      <input
+        id="produtoMarca"
+        placeholder="Ex.: Nescau"
+      >
+
+      <label for="produtoComplemento">Complemento</label>
+      <input
+        id="produtoComplemento"
+        placeholder="Ex.: Extra forte 350g"
+      >
+
+      <label for="produtoEAN">EAN</label>
+      <input
+        id="produtoEAN"
+        inputmode="numeric"
+        placeholder="Ex.: 7891234567890"
+      >
+
+      <label for="produtoCategoria">Categoria</label>
+      <input
+        id="produtoCategoria"
+        type="text"
+        readonly
+        placeholder="Definida pelo produto"
+      >
+
+      <label for="produtoUnidadePreco">Unidade de preço</label>
+      <select id="produtoUnidadePreco" required>
+        <option value="">Selecione uma unidade</option>
+        <option value="Kg">Kg</option>
+        <option value="g">g</option>
+        <option value="Litro">Litro</option>
+        <option value="ml">ml</option>
+        <option value="Unidade">Unidade</option>
+      </select>
+
+      <button type="submit">Salvar</button>
+
+    </form>
+  </div>
+</div>
+
+<div id="modalProdutoBase" class="modal">
+  <div class="modal-content">
+
+    <button type="button" class="fechar" data-fechar aria-label="Fechar">×</button>
+
+    <h2>Novo produto</h2>
+
+    <form id="formProdutoBase">
+
+      <label for="produtoBaseNome">Nome do produto</label>
+      <input
+        id="produtoBaseNome"
+        placeholder="Ex.: Achocolatado em pó"
+        required
+      >
+
+      <label for="produtoBaseCategoria">Categoria</label>
+      <select id="produtoBaseCategoria" required>
+        <option value="">Selecione uma categoria</option>
+        <option value="Hortifruti">Hortifruti</option>
+        <option value="Carnes">Carnes</option>
+        <option value="Laticínios">Laticínios</option>
+        <option value="Padaria">Padaria</option>
+        <option value="Mercearia">Mercearia</option>
+        <option value="Congelados">Congelados</option>
+        <option value="Bebidas">Bebidas</option>
+        <option value="Doces e Snacks">Doces e Snacks</option>
+        <option value="Limpeza">Limpeza</option>
+        <option value="Higiene Pessoal">Higiene Pessoal</option>
+        <option value="Pet">Pet</option>
+        <option value="Bebês">Bebês</option>
+        <option value="Outros">Outros</option>
+      </select>
+
+      <button type="submit">Salvar produto</button>
+
+    </form>
+  </div>
+</div>
+
+<div id="modalEstabelecimento" class="modal">
+  <div class="modal-content">
+    <button type="button" class="fechar" data-fechar aria-label="Fechar">×</button>
+    <h2>Novo estabelecimento</h2>
+    <form id="formEstabelecimento">
+      <label for="estabelecimentoNome">Nome</label>
+      <input id="estabelecimentoNome" required>
+      <label for="estabelecimentoCidade">Cidade</label>
+      <select id="estabelecimentoCidade" required>
+        <option value="">Selecione uma cidade</option>
+        <option>São José dos Campos</option><option>Jacareí</option><option>Outros</option>
+      </select>
+      <label for="estabelecimentoUnidade">Unidade</label>
+      <input id="estabelecimentoUnidade" placeholder="Ex.: Centro, Loja 2, Shopping">
+      <button type="submit">Salvar</button>
+    </form>
+  </div>
+</div>
+
+<div id="modalCompra" class="modal">
+  <div class="modal-content">
+    <button type="button" class="fechar" data-fechar aria-label="Fechar">×</button>
+    <h2>Nova compra</h2>
+    <form id="formCompra">
+      <label for="compraEstabelecimento">Estabelecimento</label>
+      <select id="compraEstabelecimento" required></select>
+      <label for="compraDescricao">Descrição</label>
+      <input id="compraDescricao" placeholder="Ex.: Compras da semana">
+      <label for="compraValor">Valor total</label>
+      <input id="compraValor" type="number" step="0.01" min="0" required>
+      <label for="compraData">Data</label>
+      <input id="compraData" type="date" required>
+      <button type="submit">Salvar compra</button>
+    </form>
+  </div>
+</div>
+
+<div id="modalItemCompra" class="modal">
+  <div class="modal-content">
+    <button type="button" class="fechar" data-fechar aria-label="Fechar">×</button>
+    <h2>Adicionar item</h2>
+    <form id="formItemCompra">
+      <label for="itemProdutoBase">Produto</label>
+
+      <select id="itemProdutoBase" required>
+        <option value="">Selecione...</option>
+      </select>
+
+      <label for="itemProduto">Item</label>
+
+      <select id="itemProduto" required>
+        <option value="">Selecione...</option>
+      </select>
+
+      <label for="itemQuantidade">Quantidade</label>
+
+      <div class="campo-quantidade">
+        <input
+          id="itemQuantidade"
+          type="number"
+          min="0.001"
+          max="999999.999"
+          step="0.001"
+          value="1"
+          required
+        >
+
+        <span id="itemUnidadePreco">Unidade</span>
+      </div>
+
+      <label for="itemValorUnitario">Valor unitário</label>
+      <input id="itemValorUnitario" type="number" step="0.01" min="0" required>
+      <button type="submit">Adicionar item</button>
+    </form>
+  </div>
+</div>
+
+<div id="modalItemListaCompras" class="modal">
+  <div class="modal-content">
+
+    <button
+      type="button"
+      class="fechar"
+      data-fechar
+    >
+      ×
+    </button>
+
+    <h2 id="tituloModalItemLista">
+      Adicionar produto à lista
+    </h2>
+
+    <form id="formItemListaCompras">
+
+      <label for="listaProdutoBase">
+        Produto
+      </label>
+
+      <select id="listaProdutoBase" required>
+        <option value="">
+          Selecione um produto
+        </option>
+      </select>
+
+      <label for="listaQuantidade">
+        Quantidade
+      </label>
+
+      <input
+        id="listaQuantidade"
+        type="number"
+        min="0.001"
+        max="999999.999"
+        step="0.001"
+        value="1"
+        required
+      >
+
+      <label for="listaUnidade">
+        Unidade
+      </label>
+
+      <select id="listaUnidade" required>
+        <option value="">
+          Selecione uma unidade
+        </option>
+        <option value="Kg">Kg</option>
+        <option value="g">g</option>
+        <option value="Litro">Litro</option>
+        <option value="ml">ml</option>
+        <option value="Unidade">Unidade</option>
+      </select>
+
+      <button type="submit" id="btnSalvarItemLista">
+        Adicionar à lista
+      </button>
+
+    </form>
+
+  </div>
+</div>
+
+<script src="js/db/database.js"></script>
+<script src="js/db/produtosBaseRepository.js"></script>
+<script src="js/db/produtosRepository.js"></script>
+<script src="js/db/estabelecimentosRepository.js"></script>
+<script src="js/db/comprasRepository.js"></script>
+<script src="js/db/itensCompraRepository.js"></script>
+<script src="js/db/listaComprasRepository.js"></script>
+<script src="js/shared/utils.js"></script>
+<script src="js/state/appState.js"></script>
+<script src="js/modules/produtos/produtos.js"></script>
+<script src="js/modules/estabelecimentos/estabelecimentos.js"></script>
+<script src="js/modules/compras/compras.js"></script>
+<script src="js/modules/listaCompras/listaCompras.js"></script>
+<script src="js/modules/precos/precos.js"></script>
+<script src="js/app.js"></script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker
+        .register("./service-worker.js")
+        .then(registro => {
+          console.log(
+            "Service Worker registrado:",
+            registro.scope
+          );
+        })
+        .catch(erro => {
+          console.error(
+            "Erro ao registrar Service Worker:",
+            erro
+          );
+        });
+    });
+  }
+</script>
+</body>
+</html>
