@@ -371,9 +371,6 @@ function abrirUltimasComprasLista(id) {
 
   if (!produtoBase) return;
 
-  qs("produtoBaseHistoricoComprasNome").textContent =
-    produtoBase.nome || "Produto";
-
   quantidadeHistoricoComprasExibidos =
     LIMITE_HISTORICO_COMPRAS;
 
