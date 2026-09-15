@@ -239,7 +239,12 @@ Gerencia itens da lista, edição, exclusão, marcação como comprado e consult
 
 `js/modules/precos/precos.js`
 
-Gerencia pesquisa e consulta de preços relacionados aos produtos e compras.
+A funcionalidade permanece implementada no projeto, porém a tela está
+temporariamente ocultada da navegação principal enquanto uma reformulação
+da funcionalidade de preços não é concluída.
+
+O código e a seção HTML da funcionalidade devem ser preservados até sua
+reimplementação.
 
 ---
 
@@ -458,13 +463,14 @@ IndexedDB      → dados do usuário
 
 O Service Worker utiliza cache versionado.
 
-A versão atual conhecida do cache é:
+A versão do cache deve ser incrementada quando necessário para garantir
+que novas versões dos arquivos estáticos sejam disponibilizadas aos
+clientes após um deploy.
 
-```text
-gastos-de-mercado-v1
-```
+Caches antigos são removidos durante a ativação do novo Service Worker.
 
-Ao atualizar a versão do cache, caches antigos são removidos durante a ativação do novo Service Worker.
+A versão documentada neste arquivo deve corresponder ao valor atualmente
+presente em `service-worker.js`.
 
 ---
 
@@ -572,6 +578,10 @@ Antes de modificar o projeto:
 8. Considerar impacto sobre o Service Worker quando recursos estáticos forem alterados.
 9. Reutilizar estruturas e funções existentes quando apropriado.
 10. Evitar introduzir frameworks, bibliotecas, backend ou mudanças arquiteturais sem necessidade explícita.
+
+Alterações em HTML, CSS ou JavaScript não exigem necessariamente mudança
+na lógica do Service Worker, mas devem ser verificadas contra a estratégia
+de cache atual.
 
 ### Ao alterar persistência
 
