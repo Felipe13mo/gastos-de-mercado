@@ -45,8 +45,8 @@ function renderProdutos() {
       ${produtosFiltrados.length}
       ${
         produtosFiltrados.length === 1
-          ? "produto encontrado"
-          : "produtos encontrados"
+          ? "resultado encontrado"
+          : "resultados encontrados"
       }
     </div>
   `;
@@ -64,8 +64,7 @@ function renderProdutos() {
       produtoBase?.categoria || "Sem categoria";
 
     const identificacao = [
-      p.marca,
-      p.complemento
+      p.marca
     ]
       .filter(Boolean)
       .join(" • ");
@@ -93,18 +92,28 @@ function renderProdutos() {
               : ""
           }
 
-          <small>
-            ${escapeHTML(categoria)}
-            • EAN:
-            ${escapeHTML(p.ean || "Não informado")}
-            •
-            ${escapeHTML(
-              p.unidadePreco ||
-              "Unidade não informada"
-            )}
-          </small>
+          ${
+            p.complemento
+              ? `
+                <small>
+                  ${escapeHTML(p.complemento)}
+                </small>
+              `
+              : ""
+          }
 
         </div>
+
+        <button
+          type="button"
+          class="botao-acao"
+          data-acao="ultimas-compras-produto"
+          data-id="${p.id}"
+          aria-label="Últimas compras do produto"
+        >
+          <span class="icone-acao" aria-hidden="true">🛒</span>
+          <span class="texto-acao">Últimas compras</span>
+        </button>
 
         <button
           type="button"
@@ -331,8 +340,6 @@ function abrirNovoProduto() {
 
   atualizarSelectProdutosBase();
 
-  qs("produtoCategoria").value = "";
-
   qs("tituloModalProduto").textContent =
     "Cadastrar produto";
 
@@ -377,19 +384,6 @@ function atualizarSelectProdutosBase() {
   ) {
     select.value = valorAtual;
   }
-}
-
-function atualizarCategoriaProduto() {
-  const produtoBaseId = Number(
-    qs("produtoBase").value
-  );
-
-  const produtoBase = produtosBase.find(
-    p => Number(p.id) === produtoBaseId
-  );
-
-  qs("produtoCategoria").value =
-    produtoBase?.categoria || "";
 }
 
 function abrirNovoProdutoBase() {
@@ -506,7 +500,6 @@ async function salvarProdutoBase(e) {
 
       if (novoProdutoBase) {
         qs("produtoBase").value = String(novoProdutoBase.id);
-        atualizarCategoriaProduto();
       }
 
       produtoBaseAbertoAPartirDoProduto = false;
@@ -581,6 +574,40 @@ async function salvarProduto(e) {
     return;
   }
 
+  const produtoDuplicado = produtos.some(produto => {
+
+    const mesmaBase =
+      Number(produto.produtoBaseId) ===
+      Number(produtoBaseId);
+
+    const mesmaMarca =
+      String(produto.marca || "").trim() ===
+      marca;
+
+    const mesmoComplemento =
+      String(produto.complemento || "").trim() ===
+      complemento;
+
+    const ehOutroProduto =
+      produtoEditandoId === null ||
+      Number(produto.id) !==
+      Number(produtoEditandoId);
+
+    return (
+      mesmaBase &&
+      mesmaMarca &&
+      mesmoComplemento &&
+      ehOutroProduto
+    );
+  });
+
+  if (produtoDuplicado) {
+    alert(
+      "Já existe um Produto com este Produto Base, Marca e Complemento."
+    );
+    return;
+  }
+
   /*
    * MODO EDIÇÃO
    */
@@ -612,6 +639,16 @@ async function salvarProduto(e) {
 
     produtos[indice] = produtoAtualizado;
 
+    produtoEditandoId = null;
+
+    fecharModais();
+
+    pesquisarProdutos();
+
+    e.target.reset();
+
+    return;
+
   } else {
 
     /*
@@ -633,8 +670,6 @@ async function salvarProduto(e) {
   }
 
   produtoEditandoId = null;
-
-  // produtosFiltrados = produtos;
 
   fecharModais();
 
@@ -671,8 +706,6 @@ function editarCadastroProduto(id) {
 
   qs("produtoUnidadePreco").value =
     produto.unidadePreco || "";
-
-  atualizarCategoriaProduto();
 
   const botaoSalvar =
     qs("formProduto").querySelector(
@@ -800,3 +833,288 @@ async function carregarProdutos() {
   }
 }
 
+function mostrarListaProdutos() {
+  qs("conteudoListaProdutos").style.display = "";
+  qs("historicoComprasProduto").style.display = "none";
+
+  qs("btnNovoProduto").style.display = "";
+  qs("btnNovoProduto").closest(".titulo").style.display = "";
+}
+
+function mostrarHistoricoComprasProduto() {
+  qs("conteudoListaProdutos").style.display = "none";
+  qs("historicoComprasProduto").style.display = "";
+
+  qs("btnNovoProduto").style.display = "none";
+  qs("btnNovoProduto").closest(".titulo").style.display = "none";
+}
+
+function abrirUltimasComprasProduto(id) {
+  const produto = produtos.find(
+    p => Number(p.id) === Number(id)
+  );
+
+  if (!produto) return;
+
+  produtoPrecoSelecionadoId = Number(produto.id);
+
+  quantidadeHistoricoComprasExibidos =
+    LIMITE_HISTORICO_COMPRAS;
+
+  renderHistoricoComprasProduto();
+
+  mostrarHistoricoComprasProduto();
+}
+
+function renderHistoricoComprasProduto() {
+
+  const h = qs("historicoComprasProduto");
+
+  const p = produtos.find(
+    produto =>
+      Number(produto.id) ===
+      Number(produtoPrecoSelecionadoId)
+  );
+
+  if (!p) {
+    h.innerHTML = `
+      <div class="vazio">
+        Produto não encontrado.
+      </div>
+    `;
+    return;
+  }
+
+  const produtoBase = produtosBase.find(
+    base =>
+      Number(base.id) ===
+      Number(p.produtoBaseId)
+  );
+
+  if (!produtoBase) {
+    h.innerHTML = `
+      <div class="vazio">
+        Produto base não encontrado.
+      </div>
+    `;
+    return;
+  }
+
+  const registros = itensCompra
+    .map(i => {
+
+      const c = compras.find(
+        x => Number(x.id) === Number(i.compraId)
+      );
+
+      if (
+        !c ||
+        Number(i.produtoId) !== Number(p.id)
+      ) {
+        return null;
+      }
+
+      return {
+        i,
+        c,
+        e: estabelecimentos.find(
+          x =>
+            Number(x.id) ===
+            Number(c.estabelecimentoId)
+        )
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => {
+
+      const dataA = String(a.c.data || "");
+      const dataB = String(b.c.data || "");
+
+      const comparacaoData =
+        dataB.localeCompare(dataA);
+
+      if (comparacaoData !== 0) {
+        return comparacaoData;
+      }
+
+      return Number(b.c.id) - Number(a.c.id);
+    });
+
+  const exibidos = registros.slice(
+    0,
+    quantidadeHistoricoComprasExibidos
+  );
+
+  const gruposPorData = new Map();
+
+  exibidos.forEach(registro => {
+
+    const data = String(
+      registro.c.data || ""
+    );
+
+    if (!gruposPorData.has(data)) {
+      gruposPorData.set(data, []);
+    }
+
+    gruposPorData
+      .get(data)
+      .push(registro);
+  });
+
+  h.innerHTML = `
+
+    <div class="historico-cabecalho">
+
+      <button
+        type="button"
+        class="botao-voltar"
+        data-acao="voltar-produtos"
+      >
+        ← Voltar para produtos
+      </button>
+
+      <h2>
+        ${escapeHTML(produtoBase.nome)}
+      </h2>
+
+      ${
+        [p.marca, p.complemento]
+          .filter(Boolean)
+          .map(escapeHTML)
+          .join(" • ")
+          ? `
+            <small>
+              ${[p.marca, p.complemento]
+                .filter(Boolean)
+                .map(escapeHTML)
+                .join(" • ")}
+            </small>
+          `
+          : ""
+      }
+
+      ${
+        [p.unidadePreco, p.ean]
+          .filter(Boolean)
+          .map((valor, indice) =>
+            indice === 1
+              ? "EAN: " + escapeHTML(valor)
+              : escapeHTML(valor)
+          )
+          .join(" • ")
+          ? `
+            <small>
+              ${[p.unidadePreco, p.ean]
+                .filter(Boolean)
+                .map((valor, indice) =>
+                  indice === 1
+                    ? "EAN: " + escapeHTML(valor)
+                    : escapeHTML(valor)
+                )
+                .join(" • ")}
+            </small>
+          `
+          : ""
+      }
+
+      ${
+        produtoBase.categoria
+          ? `
+            <small>
+              ${escapeHTML(produtoBase.categoria)}
+            </small>
+          `
+          : ""
+      }
+
+    </div>
+
+    <h3>Histórico de compras</h3>
+
+    ${
+      gruposPorData.size
+        ? [...gruposPorData.entries()]
+            .map(([data, registrosDoDia]) => `
+
+              <div class="grupo-historico-compras">
+
+                <div class="data-historico-compras">
+                  ${dataBR(data)}
+                </div>
+
+                <div class="lista-historico-compras">
+
+                  ${registrosDoDia.map(r => `
+
+                    <div class="card-historico-preco">
+
+                      <span class="local-historico">
+                        ${escapeHTML(
+                          r.e?.nome ||
+                          "Estabelecimento removido"
+                        )}
+                        ${
+                          r.e?.cidade
+                            ? " • " +
+                              escapeHTML(r.e.cidade)
+                            : ""
+                        }
+                      </span>
+
+                      <strong class="preco-unitario">
+                        ${moeda(r.i.valorUnitario)}
+                        / ${escapeHTML(
+                          p.unidadePreco || "Unidade"
+                        )}
+                      </strong>
+
+                      <span class="resumo-lancamento">
+                        ${quantidade(r.i.quantidade)}
+                        ${escapeHTML(
+                          p.unidadePreco || "Unidade"
+                        )}
+                        • Total
+                        ${moeda(
+                          Number(r.i.quantidade) *
+                          Number(r.i.valorUnitario)
+                        )}
+                      </span>
+
+                    </div>
+
+                  `).join("")}
+
+                </div>
+
+              </div>
+
+            `).join("")
+        : `
+          <div class="vazio">
+            Nenhuma compra registrada para este produto.
+          </div>
+        `
+    }
+
+    ${
+      quantidadeHistoricoComprasExibidos <
+      registros.length
+        ? `
+          <div id="carregarMaisHistoricoComprasProdutoContainer">
+
+            <button
+              type="button"
+              class="btn-carregar-mais"
+              data-acao="carregar-mais-historico-compras-produto"
+            >
+              Carregar mais
+            </button>
+
+          </div>
+        `
+        : ""
+    }
+
+  `;
+}
