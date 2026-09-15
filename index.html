@@ -30,7 +30,7 @@
   <button type="button" data-tela="estabelecimentos">🏪 Estabelecimentos</button>
   <button type="button" data-tela="compras">🛍️ Compras</button>
   <button type="button" data-tela="listaCompras">📝 Lista de compras</button>
-  <button type="button" data-tela="precos">💰 Preços</button>
+  <!-- <button type="button" data-tela="precos">💰 Preços</button> -->
 </nav>
 
 <main>
@@ -56,40 +56,46 @@
     </button>
   </div>
 
-  <div class="filtros-produtos">
+  <div id="conteudoListaProdutos">
 
-    <label for="pesquisaProdutos">Pesquisar produto</label>
+    <div class="filtros-produtos">
 
-    <input
-      id="pesquisaProdutos"
-      class="campo"
-      type="search"
-      placeholder="Digite o nome ou EAN..."
-      autocomplete="off"
-    >
+      <label for="pesquisaProdutos">Pesquisar produto</label>
 
-    <label for="filtroCategoriaProdutos">Categoria</label>
-
-    <select id="filtroCategoriaProdutos" class="campo">
-      <option value="">Todas as categorias</option>
-    </select>
-
-    <div class="separador-pesquisa-produtos">
-      <button
-        type="button"
-        id="btnPesquisarProdutos"
+      <input
+        id="pesquisaProdutos"
+        class="campo"
+        type="search"
+        placeholder="Digite o nome ou EAN..."
+        autocomplete="off"
       >
-        🔎 Pesquisar
-      </button>
+
+      <label for="filtroCategoriaProdutos">Categoria</label>
+
+      <select id="filtroCategoriaProdutos" class="campo">
+        <option value="">Todas as categorias</option>
+      </select>
+
+      <div class="separador-pesquisa-produtos">
+        <button
+          type="button"
+          id="btnPesquisarProdutos"
+        >
+          🔎 Pesquisar
+        </button>
+      </div>
+
     </div>
+
+    <div id="resumoProdutos"></div>
+
+    <div id="listaProdutos"></div>
+
+    <div id="carregarMaisProdutosContainer"></div>
 
   </div>
 
-  <div id="resumoProdutos"></div>
-
-  <div id="listaProdutos"></div>
-
-  <div id="carregarMaisProdutosContainer"></div>
+  <div id="historicoComprasProduto"></div>
 
 </section>
 
@@ -157,26 +163,6 @@
 
 <section id="historicoComprasLista" class="tela">
 
-  <div class="titulo">
-    <h2>Últimas compras</h2>
-  </div>
-
-  <div id="cabecalhoHistoricoComprasLista" class="card-cabecalho-historico">
-
-    <button
-      type="button"
-      class="botao-voltar"
-      data-acao="voltar-lista-compras"
-    >
-      ← Voltar para lista de compras
-    </button>
-
-    <h3 id="produtoBaseHistoricoComprasNome">
-      Produto
-    </h3>
-
-  </div>
-
   <div id="conteudoHistoricoComprasLista"></div>
 
   <div id="carregarMaisHistoricoComprasContainer"></div>
@@ -218,9 +204,10 @@
 
   </div>
 
+  <div id="resumoProdutosPrecos"></div>
+
   <div id="listaProdutosPrecos"></div>
 
-  <div id="historicoPrecos"></div>
 </section>
 
 <section id="configuracoes" class="tela">
@@ -413,14 +400,6 @@
         placeholder="Ex.: 7891234567890"
       >
 
-      <label for="produtoCategoria">Categoria</label>
-      <input
-        id="produtoCategoria"
-        type="text"
-        readonly
-        placeholder="Definida pelo produto"
-      >
-
       <label for="produtoUnidadePreco">Unidade de preço</label>
       <select id="produtoUnidadePreco" required>
         <option value="">Selecione uma unidade</option>
@@ -499,16 +478,33 @@
 <div id="modalCompra" class="modal">
   <div class="modal-content">
     <button type="button" class="fechar" data-fechar aria-label="Fechar">×</button>
-    <h2>Nova compra</h2>
+    <h2 id="tituloModalCompra">Nova compra</h2>
     <form id="formCompra">
       <label for="compraEstabelecimento">Estabelecimento</label>
       <select id="compraEstabelecimento" required></select>
-      <label for="compraDescricao">Descrição</label>
-      <input id="compraDescricao" placeholder="Ex.: Compras da semana">
+
+      <label for="compraCidade">Cidade</label>
+      <select id="compraCidade" required></select>
+
+      <label for="compraUnidade">Unidade</label>
+      <select id="compraUnidade" required></select>
+
       <label for="compraValor">Valor total</label>
-      <input id="compraValor" type="number" step="0.01" min="0" required>
+      <input
+        id="compraValor"
+        type="number"
+        step="0.01"
+        min="0"
+        required
+      >
+
       <label for="compraData">Data</label>
-      <input id="compraData" type="date" required>
+      <input
+        id="compraData"
+        type="date"
+        required
+      >
+
       <button type="submit">Salvar compra</button>
     </form>
   </div>
@@ -516,24 +512,45 @@
 
 <div id="modalItemCompra" class="modal">
   <div class="modal-content">
-    <button type="button" class="fechar" data-fechar aria-label="Fechar">×</button>
+
+    <button
+      type="button"
+      class="fechar"
+      data-fechar
+      aria-label="Fechar"
+    >
+      ×
+    </button>
+
     <h2>Adicionar item</h2>
+
     <form id="formItemCompra">
+
       <label for="itemProdutoBase">Produto</label>
 
       <select id="itemProdutoBase" required>
         <option value="">Selecione...</option>
       </select>
 
-      <label for="itemProduto">Item</label>
 
-      <select id="itemProduto" required>
+      <label for="itemMarca">Marca</label>
+
+      <select id="itemMarca">
         <option value="">Selecione...</option>
       </select>
+
+
+      <label for="itemProduto">Complemento</label>
+
+      <select id="itemProduto">
+        <option value="">Selecione...</option>
+      </select>
+
 
       <label for="itemQuantidade">Quantidade</label>
 
       <div class="campo-quantidade">
+
         <input
           id="itemQuantidade"
           type="number"
@@ -545,12 +562,27 @@
         >
 
         <span id="itemUnidadePreco">Unidade</span>
+
       </div>
 
+
       <label for="itemValorUnitario">Valor unitário</label>
-      <input id="itemValorUnitario" type="number" step="0.01" min="0" required>
-      <button type="submit">Adicionar item</button>
+
+      <input
+        id="itemValorUnitario"
+        type="number"
+        step="0.01"
+        min="0"
+        required
+      >
+
+
+      <button type="submit">
+        Adicionar item
+      </button>
+
     </form>
+
   </div>
 </div>
 
