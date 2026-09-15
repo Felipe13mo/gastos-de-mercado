@@ -13,7 +13,16 @@ async function carregarEstabelecimentos() {
 function renderEstabelecimentos() {
   const l = qs("listaEstabelecimentos");
   if (!estabelecimentos.length) { l.innerHTML = '<div class="vazio">Nenhum estabelecimento cadastrado.</div>'; return; }
-  l.innerHTML = estabelecimentos.map(e => `
+  l.innerHTML = 
+    estabelecimentos
+    .sort((a, b) => {
+      let result = a.nome.localeCompare(b.nome, "pt-BR");
+      if (result === 0) {
+        result = a.cidade.localeCompare(b.cidade, "pt-BR");
+      }
+      return result;
+    })
+    .map(e => `
     <div class="lista-item">
       <div><strong>${escapeHTML(e.nome)}</strong><small>${escapeHTML(e.cidade || "Cidade não informada")} • ${escapeHTML(e.unidade || "Unidade não informada")}</small></div>
       <button
