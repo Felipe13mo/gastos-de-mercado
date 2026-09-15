@@ -267,7 +267,8 @@ main {
 
 .detalhes-cabecalho small,
 .historico-cabecalho small {
-    color: #64748b
+    color: #64748b;
+    display: block;
 }
 
 .total-compra {
@@ -428,6 +429,7 @@ main {
     cursor: pointer;
 }
 
+.resumo-lista-precos, 
 .resumo-lista-produtos {
     color: #64748b;
     font-size: 14px;
@@ -537,6 +539,34 @@ main {
   color: #6b7280;
 }
 
+.lista-historico-compras .card-historico-preco {
+  margin: 6px 0;
+  padding: 10px 12px;
+}
+
+.lista-historico-compras .local-historico {
+  font-size: 0.85rem;
+  margin-top: 0;
+}
+
+.lista-historico-compras .preco-unitario {
+  font-size: 17px;
+  margin-top: 7px;
+}
+
+.lista-historico-compras .resumo-lancamento {
+  font-size: 0.85rem;
+  margin-top: 3px;
+}
+
+.data-historico-compras {
+  margin-top: 14px;
+  margin-bottom: 5px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #475569;
+}
+
 .descricao-historico-compra {
   font-size: 0.9rem;
   color: #4b5563;
@@ -572,13 +602,6 @@ select:focus-visible {
 .card-navegavel:focus-visible {
     outline: 3px solid #93c5fd;
     outline-offset: 2px;
-}
-
-.conteudo-card-compra {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    min-width: 0;
 }
 
 .chevron-card {
@@ -778,6 +801,44 @@ select:focus-visible {
     color: #fff;
     font-size: 16px;
     cursor: pointer;
+}
+
+.conteudo-card-compra {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.info-card-compra {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.valor-card-compra {
+  display: block;
+}
+
+.resumo-conferencia-compra {
+  background: white;
+  border-radius: 10px;
+  margin: 12px 0 18px;
+  padding: 12px 16px;
+  box-shadow: 0 2px 6px #0001;
+}
+
+.linha-resumo-compra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 0;
 }
 
 @media(max-width:600px) {
@@ -1048,6 +1109,10 @@ select:focus-visible {
         justify-content: center;
 
         font-size: 16px;
+    }
+
+    #produtosBase {
+        padding-bottom: 70px;
     }
 
 }
