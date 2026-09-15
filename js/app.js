@@ -212,12 +212,6 @@ async function exportarDados() {
     const backup = await obterDadosParaExportacao();
 
     const conteudo = JSON.stringify(backup, null, 2);
-    const arquivo = new Blob(
-      [conteudo],
-      { type: "application/json;charset=utf-8" }
-    );
-
-    const url = URL.createObjectURL(arquivo);
 
     const agora = dataHoraSaoPaulo();
     const [data, horario] = agora.split("T");
@@ -226,19 +220,48 @@ async function exportarDados() {
       .replace(/[-+].*$/, "")
       .replace(/:/g, "-");
 
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `gastos-de-mercado-backup-${data.replace(/-/g, "")}-${horarioArquivo.replace(/-/g, "")}.json`;
+    const nomeArquivo =
+      `gastos-de-mercado-backup-${data.replace(/-/g, "")}-${horarioArquivo.replace(/-/g, "")}.json`;
 
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+    if ("showSaveFilePicker" in window) {
+      const manipuladorArquivo = await window.showSaveFilePicker({
+        suggestedName: nomeArquivo,
+        types: [
+          {
+            description: "Backup do Gastos de Mercado",
+            accept: {
+              "application/json": [".json"]
+            }
+          }
+        ]
+      });
 
-    URL.revokeObjectURL(url);
+      const gravador = await manipuladorArquivo.createWritable();
+
+      await gravador.write(conteudo);
+      await gravador.close();
+
+    } else {
+      const arquivo = new Blob(
+        [conteudo],
+        { type: "application/json;charset=utf-8" }
+      );
+
+      const url = URL.createObjectURL(arquivo);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = nomeArquivo;
+
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      URL.revokeObjectURL(url);
+    }
 
     if (backup.integridade.valido) {
       alert("Backup dos dados exportado com sucesso.");
-
     } else {
       alert(
         `Backup dos dados exportado com avisos.\n\n` +
@@ -247,13 +270,16 @@ async function exportarDados() {
         `nos dados.\n\n` +
         `O arquivo foi gerado normalmente e contém os dados atuais da aplicação.`
       );
-
     }
 
   } catch (erro) {
+    if (erro.name === "AbortError") {
+      console.log("Exportação cancelada pelo usuário.");
+      return;
+    }
+
     console.error("Erro ao exportar dados:", erro);
     alert("Não foi possível exportar os dados.");
-
   }
 }
 
@@ -380,6 +406,7 @@ async function selecionarArquivoImportacao(e) {
 "use strict";
 
 async function inicializarAplicacao() {
+  qs("historicoComprasProduto").style.display = "none";
   await carregarProdutosBase();
   
   produtosBaseFiltrados = [...produtosBase];
@@ -468,6 +495,10 @@ document.addEventListener("click", e => {
 
   if (!b) return;
 
+  if (e.target.closest("button")) {
+    e.stopPropagation();
+  }
+
   const acao = b.dataset.acao;
   const id = Number(b.dataset.id);
 
@@ -477,6 +508,8 @@ document.addEventListener("click", e => {
     iniciarImportacaoDados();
   } else if (acao === "editar-produto") {
     editarCadastroProduto(id);
+  } else if (acao === "ultimas-compras-produto") {
+    abrirUltimasComprasProduto(id);
   } else if (acao === "editar-produto-base") {
     editarProdutoBase(id);
   } else if (acao === "excluir-produto") {
@@ -487,6 +520,8 @@ document.addEventListener("click", e => {
     limpar();
   } else if (acao === "excluir-estabelecimento") {
     excluirEstabelecimento(id);
+  } else if (acao === "editar-compra") {
+    editarCompra(id);
   } else if (acao === "detalhes-compra") {
     compraSelecionadaId=id;
     mostrarTela("detalhesCompra");
@@ -496,8 +531,8 @@ document.addEventListener("click", e => {
     excluirItemCompra(id);
   } else if (acao === "voltar-compras") {
     mostrarTela("compras");
-  } else if (acao === "selecionar-preco") {
-    selecionarProdutoPreco(id);
+  } else if (acao === "voltar-produtos") {
+    mostrarListaProdutos();
   } else if (acao === "voltar-precos") {
     voltarParaPesquisaPrecos();
   } else if (acao === "novo-item-lista") {
@@ -516,7 +551,12 @@ document.addEventListener("click", e => {
     mostrarTela("listaCompras");
   } else if (acao === "carregar-mais-historico-compras") {
     carregarMaisHistoricoCompras();
+  } else if (acao === "carregar-mais-historico-compras-produto") {
+    quantidadeHistoricoComprasExibidos +=
+      LIMITE_HISTORICO_COMPRAS;
+    renderHistoricoComprasProduto();
   }
+
 });
 
 document.addEventListener("keydown", e => {
@@ -532,16 +572,18 @@ qs("formProduto").addEventListener("submit", salvarProduto);
 qs("btnNovoProdutoBase").addEventListener("click", abrirNovoProdutoBase);
 qs("btnNovoProdutoBaseTela").addEventListener("click", abrirNovoProdutoBase);
 qs("formProdutoBase").addEventListener("submit", salvarProdutoBase);
-qs("produtoBase").addEventListener("change", atualizarCategoriaProduto);
 qs("formEstabelecimento").addEventListener("submit", salvarEstabelecimento);
 qs("formCompra").addEventListener("submit", salvarCompra);
 qs("formItemCompra").addEventListener("submit", salvarItemCompra);
 qs("formItemListaCompras").addEventListener("submit", salvarItemListaCompras);
 qs("btnPesquisarPrecos").addEventListener("click", pesquisarPrecos);
-qs("itemProdutoBase").addEventListener("change", atualizarItensCompra);
+qs("itemProdutoBase").addEventListener("change", atualizarMarcasItemCompra);
+qs("itemMarca").addEventListener("change", atualizarComplementosItemCompra);
 qs("itemProduto").addEventListener("change", atualizarUnidadeItemCompra);
 qs("btnPesquisarProdutos").addEventListener("click", pesquisarProdutos);
 qs("inputImportarDados").addEventListener("change", selecionarArquivoImportacao);
+qs("compraEstabelecimento").addEventListener("change", atualizarCidadesCompra);
+qs("compraCidade").addEventListener("change", atualizarUnidadesCompra);
 
 document.querySelectorAll(".modal").forEach(m => {
   m.addEventListener("click", e => { if (e.target === m) fecharModais(); });

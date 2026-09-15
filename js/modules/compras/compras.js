@@ -30,84 +30,411 @@ function renderCompras() {
     return;
   }
 
-  const lista = [...compras].sort((a, b) =>
-    String(b.data).localeCompare(String(a.data))
-  );
+  const lista = [...compras].sort((a, b) => {
+    const comparacaoData =
+      String(b.data || "").localeCompare(String(a.data || ""));
 
-  l.innerHTML = lista.map(c => {
-    const e = estabelecimentos.find(
-      x => Number(x.id) === Number(c.estabelecimentoId)
-    );
+    if (comparacaoData !== 0) {
+      return comparacaoData;
+    }
 
-    return `
-      <div
-        class="lista-item card-navegavel"
-        data-acao="detalhes-compra"
-        data-id="${c.id}"
-        role="button"
-        tabindex="0"
-        aria-label="Abrir detalhes da compra ${escapeHTML(c.descricao || "Compra")}"
-      >
-        <div class="conteudo-card-compra">
-          <strong>${escapeHTML(c.descricao || "Compra")}</strong>
-          <small>
-            ${escapeHTML(e?.nome || "Estabelecimento removido")} • ${dataBR(c.data)}
-          </small>
+    return Number(b.id) - Number(a.id);
+  });
+
+  const gruposPorData = new Map();
+
+  lista.forEach(c => {
+    const data = String(c.data || "");
+
+    if (!gruposPorData.has(data)) {
+      gruposPorData.set(data, []);
+    }
+
+    gruposPorData.get(data).push(c);
+  });
+
+  l.innerHTML = [...gruposPorData.entries()]
+    .map(([data, comprasDoDia]) => `
+      <div class="grupo-historico-compras">
+
+        <div class="data-historico-compras">
+          ${dataBR(data)}
         </div>
 
-        <div class="item-acoes">
-          <strong>${moeda(c.valorTotal)}</strong>
+        <div class="lista-historico-compras">
 
-          <button
-            type="button"
-            class="botao-acao excluir"
-            data-acao="excluir-compra"
-            data-id="${c.id}"
-            aria-label="Excluir compra"
-          >
-            <span class="icone-acao" aria-hidden="true">🗑️</span>
-            <span class="texto-acao">Excluir</span>
-          </button>
+          ${comprasDoDia.map(c => {
 
-          <span class="chevron-card" aria-hidden="true">›</span>
+            const e = estabelecimentos.find(
+              x => Number(x.id) === Number(c.estabelecimentoId)
+            );
+
+            return `
+              <div
+                class="lista-item card-navegavel card-compra"
+                data-acao="detalhes-compra"
+                data-id="${c.id}"
+                role="button"
+                tabindex="0"
+                aria-label="Abrir compra de ${escapeHTML(
+                  e?.nome || "Estabelecimento removido"
+                )}"
+              >
+
+                <div class="conteudo-card-compra">
+
+                  <!-- BLOCO 1 -->
+                  <div class="info-card-compra">
+
+                    <strong>
+                      ${escapeHTML(
+                        e?.nome || "Estabelecimento removido"
+                      )}
+                    </strong>
+
+                    <strong class="valor-card-compra">
+                      ${moeda(c.valorTotal)}
+                    </strong>
+
+                  </div>
+
+                  <!-- BLOCO 2 -->
+                  <div class="item-acoes">
+
+                    <button
+                      type="button"
+                      class="botao-acao"
+                      data-acao="editar-compra"
+                      data-id="${c.id}"
+                      aria-label="Editar compra"
+                    >
+                      <span class="icone-acao" aria-hidden="true">✏️</span>
+                      <span class="texto-acao">Editar</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      class="botao-acao excluir"
+                      data-acao="excluir-compra"
+                      data-id="${c.id}"
+                      aria-label="Excluir compra"
+                    >
+                      <span class="icone-acao" aria-hidden="true">🗑️</span>
+                      <span class="texto-acao">Excluir</span>
+                    </button>
+
+                  </div>
+
+                </div>
+
+              </div>
+            `;
+          }).join("")}
+
         </div>
+
       </div>
-    `;
-  }).join("");
+    `)
+    .join("");
 }
 
 function abrirNovaCompra() {
-  const select = qs("compraEstabelecimento");
-  select.innerHTML = '<option value="">Selecione...</option>' +
-    estabelecimentos.map(e => `<option value="${e.id}">${escapeHTML(e.nome)}</option>`).join("");
+  const selectEstabelecimento = qs("compraEstabelecimento");
+  const selectCidade = qs("compraCidade");
+  const selectUnidade = qs("compraUnidade");
+
+  const estabelecimentosUnicos = [
+    ...new Map(
+      estabelecimentos.map(e => [
+        String(e.nome || "").trim(),
+        e
+      ])
+    ).values()
+  ].sort((a, b) =>
+    String(a.nome || "").localeCompare(
+      String(b.nome || ""),
+      "pt-BR"
+    )
+  );
+
+  selectEstabelecimento.innerHTML =
+    '<option value="">Selecione...</option>' +
+    estabelecimentosUnicos
+      .map(e => `
+        <option value="${escapeHTML(e.nome)}">
+          ${escapeHTML(e.nome)}
+        </option>
+      `)
+      .join("");
+
+  selectCidade.innerHTML =
+    '<option value="">Selecione...</option>';
+
+  selectUnidade.innerHTML =
+    '<option value="">Selecione...</option>';
+
   qs("formCompra").reset();
+
   qs("compraData").value = dataHoje();
+
+  qs("tituloModalCompra").textContent = "Nova compra";
+
   abrirModal("modalCompra");
+}
+
+function atualizarCidadesCompra() {
+  const nomeEstabelecimento =
+    qs("compraEstabelecimento").value;
+
+  const selectCidade = qs("compraCidade");
+  const selectUnidade = qs("compraUnidade");
+
+  selectCidade.innerHTML =
+    '<option value="">Selecione...</option>';
+
+  selectUnidade.innerHTML =
+    '<option value="">Selecione...</option>';
+
+  if (!nomeEstabelecimento) return;
+
+  const cidades = [
+    ...new Set(
+      estabelecimentos
+        .filter(e =>
+          String(e.nome || "").trim() ===
+          nomeEstabelecimento
+        )
+        .map(e => String(e.cidade || "").trim())
+        .filter(Boolean)
+    )
+  ].sort((a, b) =>
+    a.localeCompare(b, "pt-BR")
+  );
+
+  selectCidade.innerHTML +=
+    cidades
+      .map(cidade => `
+        <option value="${escapeHTML(cidade)}">
+          ${escapeHTML(cidade)}
+        </option>
+      `)
+      .join("");
+}
+
+
+function atualizarUnidadesCompra() {
+  const nomeEstabelecimento =
+    qs("compraEstabelecimento").value;
+
+  const cidade =
+    qs("compraCidade").value;
+
+  const selectUnidade = qs("compraUnidade");
+
+  selectUnidade.innerHTML =
+    '<option value="">Selecione...</option>';
+
+  if (!nomeEstabelecimento || !cidade) return;
+
+  const unidades = [
+    ...new Set(
+      estabelecimentos
+        .filter(e =>
+          String(e.nome || "").trim() ===
+            nomeEstabelecimento &&
+          String(e.cidade || "").trim() ===
+            cidade
+        )
+        .map(e => String(e.unidade || "").trim())
+        .filter(Boolean)
+    )
+  ].sort((a, b) =>
+    a.localeCompare(b, "pt-BR")
+  );
+
+  selectUnidade.innerHTML +=
+    unidades
+      .map(unidade => `
+        <option value="${escapeHTML(unidade)}">
+          ${escapeHTML(unidade)}
+        </option>
+      `)
+      .join("");
 }
 
 async function salvarCompra(e) {
   e.preventDefault();
 
-  const novaCompra = {
-    id: Date.now(),
-    estabelecimentoId: Number(qs("compraEstabelecimento").value),
-    descricao: qs("compraDescricao").value.trim(),
-    valorTotal: Number(qs("compraValor").value),
-    data: qs("compraData").value
+  const nomeEstabelecimento =
+    qs("compraEstabelecimento").value;
+
+  const cidade =
+    qs("compraCidade").value;
+
+  const unidade =
+    qs("compraUnidade").value;
+
+  const estabelecimento = estabelecimentos.find(e =>
+    String(e.nome || "").trim() === nomeEstabelecimento &&
+    String(e.cidade || "").trim() === cidade &&
+    String(e.unidade || "").trim() === unidade
+  );
+
+  if (!estabelecimento) {
+    alert("Estabelecimento não encontrado.");
+    return;
+  }
+
+  const dadosCompra = {
+    estabelecimentoId:
+      Number(estabelecimento.id),
+
+    descricao: "",
+
+    valorTotal:
+      Number(qs("compraValor").value),
+
+    data:
+      qs("compraData").value
   };
 
   try {
-    await comprasRepository.criar(novaCompra);
-    compras.push(novaCompra);
+
+    if (compraSelecionadaId !== null) {
+
+      const compra = compras.find(
+        c => Number(c.id) === Number(compraSelecionadaId)
+      );
+
+      if (!compra) {
+        alert("Compra não encontrada.");
+        return;
+      }
+
+      const compraAtualizada = {
+        ...compra,
+        ...dadosCompra
+      };
+
+      await comprasRepository.atualizar(
+        compraAtualizada
+      );
+
+      const indice = compras.findIndex(
+        c => Number(c.id) === Number(compraSelecionadaId)
+      );
+
+      if (indice !== -1) {
+        compras[indice] = compraAtualizada;
+      }
+
+    } else {
+
+      const novaCompra = {
+        id: Date.now(),
+        ...dadosCompra
+      };
+
+      await comprasRepository.criar(novaCompra);
+
+      compras.push(novaCompra);
+    }
+
+    compraSelecionadaId = null;
+
     fecharModais();
+
     atualizarTudo();
+
     e.target.reset();
 
   } catch (erro) {
-    console.error("Erro ao salvar compra:", erro);
-    alert("Não foi possível salvar a compra.");
 
+    console.error(
+      "Erro ao salvar compra:",
+      erro
+    );
+
+    alert(
+      "Não foi possível salvar a compra."
+    );
   }
+}
+
+function editarCompra(id) {
+  const compra = compras.find(
+    c => Number(c.id) === Number(id)
+  );
+
+  if (!compra) return;
+
+  const estabelecimento = estabelecimentos.find(
+    e => Number(e.id) === Number(compra.estabelecimentoId)
+  );
+
+  if (!estabelecimento) {
+    alert("Estabelecimento da compra não encontrado.");
+    return;
+  }
+
+  compraSelecionadaId = Number(compra.id);
+
+  const selectEstabelecimento =
+    qs("compraEstabelecimento");
+
+  const selectCidade =
+    qs("compraCidade");
+
+  const selectUnidade =
+    qs("compraUnidade");
+
+  const estabelecimentosUnicos = [
+    ...new Map(
+      estabelecimentos.map(e => [
+        String(e.nome || "").trim(),
+        e
+      ])
+    ).values()
+  ].sort((a, b) =>
+    String(a.nome || "").localeCompare(
+      String(b.nome || ""),
+      "pt-BR"
+    )
+  );
+
+  selectEstabelecimento.innerHTML =
+    '<option value="">Selecione...</option>' +
+    estabelecimentosUnicos
+      .map(e => `
+        <option value="${escapeHTML(e.nome)}">
+          ${escapeHTML(e.nome)}
+        </option>
+      `)
+      .join("");
+
+  selectEstabelecimento.value =
+    String(estabelecimento.nome || "").trim();
+
+  atualizarCidadesCompra();
+
+  selectCidade.value =
+    String(estabelecimento.cidade || "").trim();
+
+  atualizarUnidadesCompra();
+
+  selectUnidade.value =
+    String(estabelecimento.unidade || "").trim();
+
+  qs("compraValor").value =
+    compra.valorTotal;
+
+  qs("compraData").value =
+    compra.data;
+
+  qs("tituloModalCompra").textContent =
+    "Editar compra";
+
+  abrirModal("modalCompra");
 }
 
 function renderDetalhes() {
@@ -117,16 +444,77 @@ function renderDetalhes() {
   const e = estabelecimentos.find(x => Number(x.id) === Number(c.estabelecimentoId));
   const itens = itensCompra.filter(i => Number(i.compraId) === Number(c.id));
 
+  const totalItensCentavos = itens.reduce(
+    (total, item) =>
+      total +
+      Math.round(
+        Number(item.quantidade) *
+        Number(item.valorUnitario) *
+        100
+      ),
+    0
+  );
+
+  const totalCompraCentavos =
+    Math.round(Number(c.valorTotal) * 100);
+
+  const diferencaCentavos =
+    totalCompraCentavos -
+    totalItensCentavos;
+
+  const diferenca = diferencaCentavos / 100;
+
   area.innerHTML = `
     <div class="detalhes-cabecalho">
-      <button type="button" class="botao-voltar" data-acao="voltar-compras">← Voltar para Compras</button>
+      <button type="button" class="botao-voltar" data-acao="voltar-compras">
+        ← Voltar para Compras
+      </button>
+      
       <h2>${escapeHTML(c.descricao || "Compra")}</h2>
-      <small>${escapeHTML(e?.nome || "Estabelecimento removido")} • ${dataBR(c.data)}</small>
-      <div class="total-compra"><span>Total da compra</span><strong>${moeda(c.valorTotal)}</strong></div>
+
+      <div class="linha-resumo-compra">
+        <small>
+          ${dataBR(c.data)} • ${escapeHTML(e?.cidade || "Cidade não registrada")}
+        </small>
+      </div>
+
+      <div class="linha-resumo-compra">
+        <small>
+          ${escapeHTML(e?.nome || "Estabelecimento removido")}
+          ${
+            e?.unidade
+              ? " • " +
+                escapeHTML(e?.unidade)
+              : ""
+          }
+        </small>
+      </div>
+
+      <div class="total-compra">
+        <span>Total da compra</span>
+        <strong>${moeda(totalCompraCentavos / 100)}</strong>
+      </div>
+
+      <div class="linha-resumo-compra">
+        <small>Itens lançados</small>
+        <small>
+          ${moeda(totalItensCentavos / 100)}
+        </small>
+      </div>
+
+      <div class="linha-resumo-compra">
+        <small>Diferença</small>
+        <small>
+          ${moeda(diferenca)}
+        </small>
+      </div>
+
     </div>
+
     <div class="titulo">
       <h3>Itens</h3>
     </div>
+
     ${itens.length ? itens.map(i => {
 
       const p = produtos.find(
@@ -146,37 +534,48 @@ function renderDetalhes() {
 
       return `
       <div class="lista-item">
+
         <div>
+
           <strong>
             ${escapeHTML(
               produtoBase?.nome || "Produto removido"
             )}
           </strong>
 
-          <small>
+          ${
+            identificacao
+              ? `
+                <small class="local-historico">
+                  ${escapeHTML(identificacao)}
+                </small>
+              `
+              : ""
+          }
+
+          <small class="local-historico">
+            ${moeda(i.valorUnitario)}
+            /
             ${escapeHTML(
-              identificacao
-                ? identificacao
-                : ""
+              p?.unidadePreco || "Unidade"
             )}
+          </small>
 
-            ${identificacao ? " • " : ""}
-
+          <strong class="resumo-lancamento">
             ${quantidade(i.quantidade)}
             ${escapeHTML(
               p?.unidadePreco || "Unidade"
             )}
-            × ${moeda(i.valorUnitario)}
-          </small>
-        </div>
-
-        <div class="item-acoes">
-          <strong>
+            • Total
             ${moeda(
               Number(i.quantidade) *
               Number(i.valorUnitario)
             )}
           </strong>
+
+        </div>
+
+        <div class="item-acoes">
 
           <button
             type="button"
@@ -188,8 +587,11 @@ function renderDetalhes() {
             <span class="icone-acao" aria-hidden="true">🗑️</span>
             <span class="texto-acao">Excluir</span>
           </button>
+
         </div>
-      </div>`;
+
+      </div>
+      `;
     }).join("") : '<div class="vazio">Nenhum item lançado.</div>'}
 
     <button
@@ -204,14 +606,31 @@ function renderDetalhes() {
 
 function abrirItemCompra() {
   const selectProduto = qs("itemProdutoBase");
-  const selectItem = qs("itemProduto");
+  const selectMarca = qs("itemMarca");
+  const selectComplemento = qs("itemProduto");
 
   /*
-   * Produto = Produto base
+   * Identifica quais Produtos Base possuem
+   * pelo menos um Produto cadastrado.
+   */
+  const idsProdutosBaseComCadastro = new Set(
+    produtos.map(produto =>
+      Number(produto.produtoBaseId)
+    )
+  );
+
+  /*
+   * Produto = somente Produtos Base que
+   * possuem pelo menos um Produto cadastrado.
    */
   selectProduto.innerHTML =
     '<option value="">Selecione...</option>' +
     produtosBase
+      .filter(produtoBase =>
+        idsProdutosBaseComCadastro.has(
+          Number(produtoBase.id)
+        )
+      )
       .slice()
       .sort((a, b) =>
         String(a.nome || "").localeCompare(
@@ -227,10 +646,17 @@ function abrirItemCompra() {
       .join("");
 
   /*
-   * Item começa vazio até que um Produto
+   * Marca começa vazia até que um Produto
    * seja selecionado.
    */
-  selectItem.innerHTML =
+  selectMarca.innerHTML =
+    '<option value="">Selecione...</option>';
+
+  /*
+   * Complemento começa vazio até que
+   * Produto e Marca sejam definidos.
+   */
+  selectComplemento.innerHTML =
     '<option value="">Selecione...</option>';
 
   qs("formItemCompra").reset();
@@ -240,7 +666,8 @@ function abrirItemCompra() {
    * então garantimos novamente os estados iniciais.
    */
   selectProduto.value = "";
-  selectItem.value = "";
+  selectMarca.value = "";
+  selectComplemento.value = "";
 
   qs("itemQuantidade").value = "1";
   qs("itemUnidadePreco").textContent = "Unidade";
@@ -248,67 +675,161 @@ function abrirItemCompra() {
   abrirModal("modalItemCompra");
 }
 
-function atualizarItensCompra() {
+function atualizarMarcasItemCompra() {
   const selectProduto = qs("itemProdutoBase");
-  const selectItem = qs("itemProduto");
+  const selectMarca = qs("itemMarca");
+  const selectComplemento = qs("itemProduto");
 
-  if (!selectProduto || !selectItem) return;
-
-  const produtoBaseId = selectProduto.value;
-
-  /*
-   * Nenhum Produto selecionado:
-   * mantém o dropdown Item vazio.
-   */
-  if (!produtoBaseId) {
-    selectItem.innerHTML =
-      '<option value="">Selecione...</option>';
-
+  if (!selectProduto || !selectMarca || !selectComplemento) {
     return;
   }
 
-  /*
-   * Localiza somente os cadastros específicos
-   * pertencentes ao Produto base selecionado.
-   */
+  const produtoBaseId = selectProduto.value;
+
+  selectMarca.innerHTML =
+    '<option value="">Selecione...</option>';
+
+  selectComplemento.innerHTML =
+    '<option value="">Selecione...</option>';
+
+  if (!produtoBaseId) {
+    return;
+  }
+
   const itens = produtos.filter(
     produto =>
       Number(produto.produtoBaseId) ===
       Number(produtoBaseId)
   );
 
-  /*
-   * Nenhum item cadastrado para o Produto.
-   */
+  const marcas = [];
+
+  itens.forEach(item => {
+    const marca = String(item.marca || "").trim();
+
+    if (!marcas.includes(marca)) {
+      marcas.push(marca);
+    }
+  });
+
+  marcas.sort((a, b) =>
+    a.localeCompare(b, "pt-BR")
+  );
+
+  selectMarca.innerHTML =
+    '<option value="">Selecione...</option>' +
+    marcas
+      .map(marca => {
+        const valor =
+          marca === ""
+            ? "__SEM_MARCA__"
+            : marca;
+
+        return `
+          <option value="${escapeHTML(valor)}">
+            ${escapeHTML(marca || "Sem marca")}
+          </option>
+        `;
+      })
+      .join("");
+}
+
+function atualizarComplementosItemCompra() {
+  const selectProduto = qs("itemProdutoBase");
+  const selectMarca = qs("itemMarca");
+  const selectComplemento = qs("itemProduto");
+
+  if (!selectProduto || !selectMarca || !selectComplemento) {
+    return;
+  }
+
+  const produtoBaseId = selectProduto.value;
+  const valorMarca = selectMarca.value;
+
+  selectComplemento.innerHTML =
+    '<option value="">Selecione...</option>';
+
+  if (!produtoBaseId || !valorMarca) {
+    return;
+  }
+
+  const marcaSelecionada =
+    valorMarca === "__SEM_MARCA__"
+      ? ""
+      : valorMarca;
+
+  const itens = produtos.filter(produto => {
+    const mesmaBase =
+      Number(produto.produtoBaseId) ===
+      Number(produtoBaseId);
+
+    const mesmaMarca =
+      String(produto.marca || "").trim() ===
+      String(marcaSelecionada).trim();
+
+    return mesmaBase && mesmaMarca;
+  });
+
   if (!itens.length) {
-    selectItem.innerHTML =
-      '<option value="">Nenhum item disponível</option>';
+    selectComplemento.innerHTML =
+      '<option value="">Nenhum complemento disponível</option>';
 
     return;
   }
 
   /*
-   * Monta a identificação visual do Item.
+   * Agrupa os produtos pelo complemento.
+   *
+   * Produtos sem complemento usam uma chave
+   * especial apenas para a interface.
    */
-  selectItem.innerHTML =
+  const complementos = new Map();
+
+  itens.forEach(item => {
+    const complemento =
+      String(item.complemento || "").trim();
+
+    const chave =
+      complemento === ""
+        ? "__SEM_COMPLEMENTO__"
+        : complemento;
+
+    if (!complementos.has(chave)) {
+      complementos.set(chave, item);
+    }
+  });
+
+  const opcoes = [...complementos.entries()]
+    .sort(([chaveA], [chaveB]) => {
+      const nomeA =
+        chaveA === "__SEM_COMPLEMENTO__"
+          ? "Sem complemento"
+          : chaveA;
+
+      const nomeB =
+        chaveB === "__SEM_COMPLEMENTO__"
+          ? "Sem complemento"
+          : chaveB;
+
+      return nomeA.localeCompare(nomeB, "pt-BR");
+    });
+
+  selectComplemento.innerHTML =
     '<option value="">Selecione...</option>' +
-    itens.map(item => {
+    opcoes
+      .map(([chave, item]) => {
+        const nome =
+          chave === "__SEM_COMPLEMENTO__"
+            ? "Sem complemento"
+            : chave;
 
-      const partes = [
-        item.marca
-          ? item.marca
-          : "Sem marca",
-
-        item.complemento
-      ]
-        .filter(Boolean);
-
-      return `
-        <option value="${item.id}">
-          ${escapeHTML(partes.join(" • "))}
-        </option>
-      `;
-    }).join("");
+        return `
+          <option value="${item.id}">
+            ${escapeHTML(nome)}
+          </option>
+        `;
+      })
+      .join("");
 }
 
 function atualizarUnidadeItemCompra() {

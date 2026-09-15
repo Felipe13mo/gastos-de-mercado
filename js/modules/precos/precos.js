@@ -48,7 +48,6 @@ function prepararPrecos() {
 
   qs("listaProdutosPrecos").innerHTML = "";
 
-  qs("historicoPrecos").innerHTML = "";
 }
 
 function pesquisarPrecos() {
@@ -152,12 +151,22 @@ function pesquisarPrecos() {
     qs("listaProdutosPrecos").innerHTML =
       '<div class="vazio">Nenhum produto encontrado.</div>';
 
-    qs("historicoPrecos").innerHTML = "";
     return;
   }
 
+  resumo = `
+    <div class="resumo-lista-precos">
+      ${encontrados.length}
+      ${
+        encontrados.length === 1
+          ? "resultado encontrado"
+          : "resultados encontrados"
+      }
+    </div>
+  `;
+
   qs("listaProdutosPrecos").innerHTML =
-    '<div class="subtitulo-lista">Produtos encontrados</div>' +
+    resumo + 
     encontrados.map(p => {
 
       const produtoBase = produtosBase.find(
@@ -185,8 +194,6 @@ function pesquisarPrecos() {
         <button
           type="button"
           class="produto-pesquisa"
-          data-acao="selecionar-preco"
-          data-id="${p.id}"
         >
           <span>
             <strong>
@@ -209,36 +216,6 @@ function pesquisarPrecos() {
       `;
     }).join("");
 
-  qs("historicoPrecos").innerHTML = "";
-}
-
-function selecionarProdutoPreco(id) {
-
-  const produto = produtos.find(
-    p => Number(p.id) === Number(id)
-  );
-
-  if (!produto) return;
-
-  const produtoBase = produtosBase.find(
-    base =>
-      Number(base.id) ===
-      Number(produto.produtoBaseId)
-  );
-
-  if (!produtoBase) return;
-
-  produtoPrecoSelecionadoId =
-    Number(produto.id);
-
-  qs("containerPesquisaPrecos").style.display =
-    "none";
-
-  qs("listaProdutosPrecos").innerHTML = "";
-
-  qs("historicoPrecos").innerHTML = "";
-
-  renderHistoricoPrecos();
 }
 
 function mostrarContainerPesquisaPrecos() {
@@ -247,8 +224,6 @@ function mostrarContainerPesquisaPrecos() {
 
 function voltarParaPesquisaPrecos() {
   produtoPrecoSelecionadoId = null;
-
-  qs("historicoPrecos").innerHTML = "";
 
   mostrarContainerPesquisaPrecos();
 
@@ -407,15 +382,14 @@ function renderHistoricoComprasLista() {
 
   if (!area || !container) return;
 
-  const registros = obterHistoricoComprasProdutoBase(
-    produtoBaseHistoricoComprasId
+  const produtoBase = produtosBase.find(
+    p => Number(p.id) === Number(produtoBaseHistoricoComprasId)
   );
 
-  if (!registros.length) {
-
+  if (!produtoBase) {
     area.innerHTML = `
       <div class="vazio">
-        Nenhuma compra registrada para este produto.
+        Produto não encontrado.
       </div>
     `;
 
@@ -424,78 +398,166 @@ function renderHistoricoComprasLista() {
     return;
   }
 
+  const registros = obterHistoricoComprasProdutoBase(
+    produtoBaseHistoricoComprasId
+  );
+
   const registrosExibidos = registros.slice(
     0,
     quantidadeHistoricoComprasExibidos
   );
 
+  const gruposPorData = new Map();
+
+  registrosExibidos.forEach(registro => {
+
+    const data = String(
+      registro.compra.data || ""
+    );
+
+    if (!gruposPorData.has(data)) {
+      gruposPorData.set(data, []);
+    }
+
+    gruposPorData
+      .get(data)
+      .push(registro);
+  });
+
   area.innerHTML = `
+
+    <div class="historico-cabecalho">
+
+      <button
+        type="button"
+        class="botao-voltar"
+        data-acao="voltar-lista-compras"
+      >
+        ← Voltar para lista de compras
+      </button>
+
+      <h2>
+        ${escapeHTML(produtoBase.nome)}
+      </h2>
+
+      ${
+        produtoBase.categoria
+          ? `
+            <small>
+              ${escapeHTML(produtoBase.categoria)}
+            </small>
+          `
+          : ""
+      }
+
+    </div>
+
     <h3 class="titulo-historico-compras">
       Histórico de compras
     </h3>
 
-    ${registrosExibidos.map(r => {
+    ${
+      gruposPorData.size
+        ? [...gruposPorData.entries()]
+            .map(([data, registrosDoDia]) => `
 
-      const descricaoProduto = [
-        r.produto?.marca,
-        r.produto?.complemento
-      ]
-        .filter(Boolean)
-        .join(" • ");
+              <div class="grupo-historico-compras">
 
-      return `
-        <div class="card-historico-compra">
+                <div class="data-historico-compras">
+                  ${dataBR(data)}
+                </div>
 
-          <strong class="data-historico-compra">
-            ${dataBR(r.compra.data)}
-          </strong>
+                <div class="lista-historico-compras">
 
-          <span class="local-historico">
-            ${escapeHTML(
-              r.estabelecimento?.nome ||
-              "Estabelecimento removido"
-            )}
-            ${
-              r.estabelecimento?.cidade
-                ? " • " +
-                  escapeHTML(r.estabelecimento.cidade)
-                : ""
-            }
-          </span>
+                  ${registrosDoDia.map(r => `
 
-          ${
-            descricaoProduto
-              ? `
-                <span class="descricao-historico-compra">
-                  ${escapeHTML(descricaoProduto)}
-                </span>
-              `
-              : ""
-          }
+                    <div class="card-historico-preco">
 
-          <strong class="preco-historico-compra">
-            ${moeda(r.item.valorUnitario)}
-            / ${escapeHTML(
-              r.produto?.unidadePreco || "Unidade"
-            )}
-          </strong>
+                      <span class="local-historico">
+                        ${escapeHTML(
+                          r.estabelecimento?.nome ||
+                          "Estabelecimento removido"
+                        )}
+                        ${
+                          r.estabelecimento?.cidade
+                            ? " • " +
+                              escapeHTML(
+                                r.estabelecimento.cidade
+                              )
+                            : ""
+                        }
+                        ${
+                          r.estabelecimento?.unidade
+                            ? " • " +
+                              escapeHTML(
+                                r.estabelecimento.unidade
+                              )
+                            : ""
+                        }
+                      </span>
 
-          <span class="resumo-historico-compra">
-            ${quantidade(r.item.quantidade)}
-            ${escapeHTML(
-              r.produto?.unidadePreco || "Unidade"
-            )}
-            • Total
-            ${moeda(
-              Number(r.item.quantidade) *
-              Number(r.item.valorUnitario)
-            )}
-          </span>
+                      ${
+                        r.produto?.marca || r.produto?.complemento
+                          ? `
+                            <span class="local-historico">
+                              ${
+                                r.produto?.marca
+                                  ? escapeHTML(r.produto.marca)
+                                  : ""
+                              }
+                              ${
+                                r.produto?.marca && r.produto?.complemento
+                                  ? " • "
+                                  : ""
+                              }
+                              ${
+                                r.produto?.complemento
+                                  ? escapeHTML(r.produto.complemento)
+                                  : ""
+                              }
+                            </span>
+                          `
+                          : ""
+                      }
 
-        </div>
-      `;
+                      <strong class="preco-unitario">
+                        ${moeda(r.item.valorUnitario)}
+                        /
+                        ${escapeHTML(
+                          r.produto?.unidadePreco ||
+                          "Unidade"
+                        )}
+                      </strong>
 
-    }).join("")}
+                      <span class="resumo-lancamento">
+                        ${quantidade(r.item.quantidade)}
+                        ${escapeHTML(
+                          r.produto?.unidadePreco ||
+                          "Unidade"
+                        )}
+                        • Total
+                        ${moeda(
+                          Number(r.item.quantidade) *
+                          Number(r.item.valorUnitario)
+                        )}
+                      </span>
+
+                    </div>
+
+                  `).join("")}
+
+                </div>
+
+              </div>
+
+            `).join("")
+        : `
+          <div class="vazio">
+            Nenhuma compra registrada para este produto.
+          </div>
+        `
+    }
+
   `;
 
   if (
